@@ -48,7 +48,7 @@ jobs:
 
       - name: Test Web Server Response
         run: |
-          curl -I http://localhost:8080 | grep "200 OK++"
+          curl -I http://localhost:8080 | grep "200 OK"
 
       - name: Stop and Remove Container
         run: |
