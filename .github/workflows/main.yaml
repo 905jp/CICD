@@ -15,32 +15,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile') }}
+          path: /tmp/.docker-cache
+          key: ${{ runner.os }}-docker-httpd
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            ${{ runner.os }}-docker-
 
-      - name: Pull Web Server Docker Image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: false
-          load: true
-          tags: httpd:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          
-      - name: Move cache
+      - name: Load cached Docker image
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          if [ -f /tmp/.docker-cache/httpd.tar ]; then
+              docker load -i /tmp/.docker-cache/httpd.tar
+          fi
+
+      - name: Pull Web Server Docker Image (if not cached)
+        run: |
+          if ! docker image inspect httpd:latest > /dev/null 2>&1; then
+              docker pull httpd:latest
+              mkdir -p /tmp/.docker-cache
+              docker save httpd:latest -o /tmp/.docker-cache/httpd.tar
+          fi
 
       - name: Run Web Server Container
         run: |
